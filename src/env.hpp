@@ -1,0 +1,27 @@
+#ifndef ENV_HPP
+#define ENV_HPP
+
+#define GPIO_LED_DEBUG (47)
+#define NUM_LEDS_DEBUG (4)
+
+#define GPIO_BATTERY_VOLTAGE (18)
+
+#define GPIO_DIRECTION_A (9)
+#define GPIO_DIRECTION_B (37)
+#define GPIO_PWM_A       (3)
+#define GPIO_PWM_B       (38)
+
+#define GPIO_PWM_VACUUM (11)
+
+#define GPIO_ENCODER_LEFT_A  (7)
+#define GPIO_ENCODER_LEFT_B  (6)
+#define GPIO_ENCODER_RIGHT_A (12)
+#define GPIO_ENCODER_RIGHT_B (13)
+
+#define GPIO_MULTIPLEXER_DIGITAL_ADDRESS {39, 40, 41, 42}
+#define GPIO_MULTIPLEXER_ANALOG_INPUT    (10)
+#define GPIO_MULTIPLEXER_LINE_SENSORS_INDEX \
+  {13, 12, 11, 10, 9, 8, 5, 4, 3, 2, 1, 0}
+#define GPIO_MULTIPLEXER_SIDE_SENSORS_INDEX {15, 14, 6, 7}
+
+#endif // ENV_HPP

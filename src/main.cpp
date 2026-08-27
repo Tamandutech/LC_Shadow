@@ -5,10 +5,139 @@
 #include "env.hpp"
 
 // Drivers
+#include "drivers/LineSensorArray/LineSensorArray.hpp"
 #include "drivers/MotorDriver/MotorDriver.hpp"
 
-MotorDriver motorDriver;
+// Lógica
+#include "logic/LineTracker/LineTracker.hpp"
 
-void setup() {}
+LineSensorArray lineSensors;
+MotorDriver     motorLeft(GPIO_DIRECTION_A, GPIO_PWM_A, PWM_CHANNEL_MOTOR_A);
+MotorDriver     motorRight(GPIO_DIRECTION_B, GPIO_PWM_B, PWM_CHANNEL_MOTOR_B);
 
-void loop() { delay(1000); }
+// O LineTracker só pode ser criado DEPOIS da calibração (ele precisa do
+// min/max de cada sensor no construtor), então começa como ponteiro nulo e é
+// criado dentro de setup(), depois da calibração rodar.
+LineTracker *lineTracker = nullptr;
+
+// -----------------------------------------------------------------------------
+// Safety lock
+// -----------------------------------------------------------------------------
+// Trava a execução se qualquer pino ainda estiver com o valor placeholder
+// (-1). Evita que o robô tente rodar com pinagem incompleta e faça algo
+// inesperado, tipo sair voando ou rodar sei lá.
+// -----------------------------------------------------------------------------
+void haltWithError(const char *message) {
+  Serial.begin(115200);
+  while(true) {
+    Serial.println(message);
+    delay(1000);
+  }
+}
+
+void checkPinsConfigured() {
+  const int addressPins[4]   = GPIO_MULTIPLEXER_DIGITAL_ADDRESS;
+  bool      allAddressPinsOk = true;
+  for(int i = 0; i < 4; i++) {
+    if(addressPins[i] == -1) allAddressPinsOk = false;
+  }
+
+  bool allPinsOk = allAddressPinsOk && GPIO_MULTIPLEXER_ANALOG_INPUT != -1 &&
+                   GPIO_DIRECTION_A != -1 && GPIO_DIRECTION_B != -1 &&
+                   GPIO_PWM_A != -1 && GPIO_PWM_B != -1 &&
+                   GPIO_CALIBRATION_BUTTON != -1;
+
+  if(!allPinsOk) {
+    haltWithError("ERRO: existe pino com valor -1 em env.hpp. "
+                  "Preencha os TODOs antes de rodar o robo.");
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Calibração automática
+// -----------------------------------------------------------------------------
+// Espera o botão físico ser pressionado, depois passa o robô sobre a linha
+// por 'CALIBRATION_DURATION_MS' enquanto grava o menor e o maior valor
+// visto em cada um dos 12 sensores. Esses valores viram calibrationMin/Max,
+// usados por normalize() dentro do LineTracker.
+// -----------------------------------------------------------------------------
+void waitForCalibrationButton() {
+  // Botão com pull-up interno: solto = HIGH, pressionado = LOW.
+  pinMode(GPIO_CALIBRATION_BUTTON, INPUT_PULLUP);
+
+  Serial.println("Pressione o botao para iniciar a calibracao...");
+  while(digitalRead(GPIO_CALIBRATION_BUTTON) == HIGH) {
+    delay(10);
+  }
+}
+
+void runCalibration(int calibrationMin[NUM_LINE_SENSORS],
+                    int calibrationMax[NUM_LINE_SENSORS]) {
+  Serial.println("Calibrando... girando no proprio eixo.");
+
+  // Começa cada mínimo "artificialmente alto" e cada máximo "artificialmente
+  // baixo", assim a primeira leitura real sempre corrige os dois.
+  for(int i = 0; i < NUM_LINE_SENSORS; i++) {
+    calibrationMin[i] = 4095;
+    calibrationMax[i] = 0;
+  }
+
+  // Gira no próprio eixo: motor esquerdo pra frente, direito pra trás.
+  // Isso faz a linha do multiplexador passar sob todos os 12 sensores em
+  // algum momento, sem o robô sair do lugar.
+  motorLeft.pwmOutput(CALIBRATION_SPEED);
+  motorRight.pwmOutput(-CALIBRATION_SPEED);
+
+  unsigned long startTime = millis();
+  while(millis() - startTime < CALIBRATION_DURATION_MS) {
+    auto rawReadings = lineSensors.readAll();
+
+    for(int i = 0; i < NUM_LINE_SENSORS; i++) {
+      if(rawReadings[i] < calibrationMin[i]) calibrationMin[i] = rawReadings[i];
+      if(rawReadings[i] > calibrationMax[i]) calibrationMax[i] = rawReadings[i];
+    }
+  }
+
+  // Para os motores assim que a calibração termina.
+  motorLeft.pwmOutput(0);
+  motorRight.pwmOutput(0);
+
+  Serial.println("Calibracao concluida.");
+}
+
+// -----------------------------------------------------------------------------
+// Aplica a correção do PID nos dois motores.
+// -----------------------------------------------------------------------------
+// correction negativa = linha à esquerda -> motor esquerdo desacelera,
+// direito acelera (o robô vira pra esquerda) e vice-versa.
+void applyMotorSpeeds(float correction) {
+  int32_t leftSpeed  = BASE_SPEED - (int32_t)correction;
+  int32_t rightSpeed = BASE_SPEED + (int32_t)correction;
+
+  motorLeft.pwmOutput(leftSpeed);
+  motorRight.pwmOutput(rightSpeed);
+}
+
+void setup() {
+  Serial.begin(115200);
+
+  checkPinsConfigured();
+
+  waitForCalibrationButton();
+
+  int calibrationMin[NUM_LINE_SENSORS];
+  int calibrationMax[NUM_LINE_SENSORS];
+  runCalibration(calibrationMin, calibrationMax);
+
+  // Só agora cria o LineTracker, já com a calibração real.
+  // invertReadings = true: pista preta, linha branca (LineTracker.hpp).
+  lineTracker = new LineTracker(PID_KP, PID_KI, PID_KD, calibrationMin,
+                                calibrationMax, /*invertReadings=*/true);
+}
+
+void loop() {
+  auto  rawReadings = lineSensors.readAll();
+  float correction  = lineTracker->update(rawReadings.data());
+
+  applyMotorSpeeds(correction);
+}

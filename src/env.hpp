@@ -13,23 +13,21 @@
 
 // --- Multiplexador dos sensores de linha ------------------------------------
 
-#define GPIO_MULTIPLEXER_DIGITAL_ADDRESS {-1, -1, -1, -1} // 4 pinos de endereço
-#define GPIO_MULTIPLEXER_ANALOG_INPUT    (-1)             // 1 pino analógico
+#define GPIO_MULTIPLEXER_DIGITAL_ADDRESS {39, 40, 41, 42} // 4 pinos de endereço
+#define GPIO_MULTIPLEXER_ANALOG_INPUT    (10)             // 1 pino analógico
 
-// Ordem física dos 12 sensores de linha nos canais do multiplexador.
-// [confirmar se a ordem/fiação é igual à do robô oficial ou se precisa
-// remapear conforme a posição física dos sensores na sua placa.]
+// Ordem dos 12 sensores de linha nos canais do multiplexador.
 #define GPIO_MULTIPLEXER_LINE_SENSORS_INDEX \
-  {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11}
+  {13, 12, 11, 10, 9, 8, 5, 4, 3, 2, 1, 0}
 
 // --- Motores ------------------------------------------------------------
 // Cada motor tem um pino de direção (gira sentido horário/anti-horário) e
 // um pino de PWM (controla a velocidade).
-#define GPIO_DIRECTION_A (-1) // pino de direção do motor A (esquerdo)
-#define GPIO_PWM_A       (-1) // pino PWM do motor A (esquerdo)
+#define GPIO_DIRECTION_A (9)  // pino de direção do motor A (esquerdo)
+#define GPIO_PWM_A       (3)  // pino PWM do motor A (esquerdo)
 
-#define GPIO_DIRECTION_B (-1) // pino de direção do motor B (direito)
-#define GPIO_PWM_B       (-1) // pino PWM do motor B (direito)
+#define GPIO_DIRECTION_B (37) // pino de direção do motor B (direito)
+#define GPIO_PWM_B       (38) // pino PWM do motor B (direito)
 
 // Canais do periférico LEDC do ESP32 usados por cada motor.
 // Não são pinos físicos, só um número de canal interno.
@@ -41,8 +39,9 @@
 #define PWM_RESOLUTION_BITS (8)
 #define MAX_PWM_VALUE       (255)
 
-// --- Botão de calibração --------------------------------------------------
-#define GPIO_CALIBRATION_BUTTON (-1) // pino do botão de calibração
+// --- Calibração Automática
+// Ao ligar, o robô espera os micro segundos definidos e depois calibra sozinho.
+#define POSITIONING_DELAY_MS (3000)
 
 // --- Parâmetros de controle ------------------------------------------------
 // Ganhos do PID. Ainda não calibrados/testados.

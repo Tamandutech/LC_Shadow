@@ -44,30 +44,11 @@ void checkPinsConfigured() {
 
   bool allPinsOk = allAddressPinsOk && GPIO_MULTIPLEXER_ANALOG_INPUT != -1 &&
                    GPIO_DIRECTION_A != -1 && GPIO_DIRECTION_B != -1 &&
-                   GPIO_PWM_A != -1 && GPIO_PWM_B != -1 &&
-                   GPIO_CALIBRATION_BUTTON != -1;
+                   GPIO_PWM_A != -1 && GPIO_PWM_B != -1;
 
   if(!allPinsOk) {
     haltWithError("ERRO: existe pino com valor -1 em env.hpp. "
                   "Preencha os TODOs antes de rodar o robo.");
-  }
-}
-
-// -----------------------------------------------------------------------------
-// Calibração automática
-// -----------------------------------------------------------------------------
-// Espera o botão físico ser pressionado, depois passa o robô sobre a linha
-// por 'CALIBRATION_DURATION_MS' enquanto grava o menor e o maior valor
-// visto em cada um dos 12 sensores. Esses valores viram calibrationMin/Max,
-// usados por normalize() dentro do LineTracker.
-// -----------------------------------------------------------------------------
-void waitForCalibrationButton() {
-  // Botão com pull-up interno: solto = HIGH, pressionado = LOW.
-  pinMode(GPIO_CALIBRATION_BUTTON, INPUT_PULLUP);
-
-  Serial.println("Pressione o botao para iniciar a calibracao...");
-  while(digitalRead(GPIO_CALIBRATION_BUTTON) == HIGH) {
-    delay(10);
   }
 }
 
@@ -123,7 +104,9 @@ void setup() {
 
   checkPinsConfigured();
 
-  waitForCalibrationButton();
+  Serial.println(
+      "Posicione o robo na pista. Calibracao automatica em breve...");
+  delay(POSITIONING_DELAY_MS);
 
   int calibrationMin[NUM_LINE_SENSORS];
   int calibrationMax[NUM_LINE_SENSORS];

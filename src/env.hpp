@@ -62,4 +62,7 @@
 // Duração da varredura de calibração automática (ver runCalibration()).
 #define CALIBRATION_DURATION_MS (3000)
 
+// Bluetooth BLE
+#define BLE_DEVICE_NAME "Shadow"
+
 #endif

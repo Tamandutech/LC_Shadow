@@ -16,9 +16,14 @@ void MotorDriver::pwmOutput(int32_t value) {
   // O sinal do valor define o sentido (HIGH = frente, LOW = ré).
   digitalWrite(directionPin_, value >= 0 ? HIGH : LOW);
 
-  // O PWM só entende intensidade (sem sinal), então usamos o valor absoluto,
+  // O PWM só entende intensidade (sem sinal).
   int32_t magnitude = value < 0 ? -value : value;
-  if(magnitude > MAX_PWM_VALUE) magnitude = MAX_PWM_VALUE;
 
-  ledcWrite(pwmChannel_, magnitude);
+  // Limita a velocidade entre 0% e 100%.
+  if(magnitude > 100) magnitude = 100;
+
+  // Converte porcentagem (0-100%) para PWM (0-255).
+  int32_t pwmValue = (magnitude * MAX_PWM_VALUE) / 100;
+
+  ledcWrite(pwmChannel_, pwmValue);
 }

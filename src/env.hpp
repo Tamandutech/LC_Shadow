@@ -50,19 +50,26 @@
 #define PID_KI (0.0f)
 #define PID_KD (0.0f)
 
-// Velocidade base aplicada aos dois motores antes de somar a correção do PID.
-// ajustar conforme o motor/bateria do robô.
-#define BASE_SPEED (100)
+// tentei fazer um esquema de 0 a 100% dessa vez
+//  Velocidade base aplicada aos dois motores antes de somar a correção do PID.
+//  ajustar conforme a resposta do robô.
+#define BASE_SPEED (40)
 
-// Velocidade usada só durante a calibração, girando o robô no próprio eixo.
+// Velocidade usada só durante a calibração, girando o robô no próprio eixo.//
 // Pode ser mais baixa que BASE_SPEED pra girar de forma mais controlada.
-// ajustar conforme o motor/bateria do robô.
-#define CALIBRATION_SPEED (50)
+// ajustar conforme a resposta do robô.
+#define CALIBRATION_SPEED (20)
 
 // Duração da varredura de calibração automática (ver runCalibration()).
 #define CALIBRATION_DURATION_MS (3000)
 
 // Bluetooth BLE
 #define BLE_DEVICE_NAME "Shadow"
+
+// --- LED de status -----------------------------------------------------
+// Avisa visualmente o estado do robô (ver StatusLed.hpp), sem precisar de
+// monitor serial. 1 pisca = ligado/esperando calibrar; pisca contínuo =
+// calibrando; aceso fixo = pronto pra começar; apagado = rodando.
+#define GPIO_STATUS_LED (47)
 
 #endif

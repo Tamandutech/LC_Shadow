@@ -8,15 +8,17 @@
 #include "drivers/BluetoothBLE/BluetoothBLE.hpp"
 #include "drivers/LineSensorArray/LineSensorArray.hpp"
 #include "drivers/MotorDriver/MotorDriver.hpp"
+#include "drivers/StatusLed/StatusLed.hpp"
+
 
 // Lógica
 #include "logic/LineTracker/LineTracker.hpp"
-
 
 LineSensorArray lineSensors;
 MotorDriver     motorLeft(GPIO_DIRECTION_A, GPIO_PWM_A, PWM_CHANNEL_MOTOR_A);
 MotorDriver     motorRight(GPIO_DIRECTION_B, GPIO_PWM_B, PWM_CHANNEL_MOTOR_B);
 BluetoothBLE    ble;
+StatusLed       statusLed(GPIO_STATUS_LED);
 
 
 // O LineTracker só pode ser criado DEPOIS da calibração (ele precisa do
@@ -81,6 +83,7 @@ void runCalibration() {
 
   unsigned long startTime = millis();
   while(millis() - startTime < CALIBRATION_DURATION_MS) {
+    statusLed.updateBlinking();
     auto rawReadings = lineSensors.readAll();
 
     for(int i = 0; i < NUM_LINE_SENSORS; i++) {
@@ -88,6 +91,7 @@ void runCalibration() {
       if(rawReadings[i] > calibrationMax[i]) calibrationMax[i] = rawReadings[i];
     }
   }
+  statusLed.off();
 
   // Para os motores assim que a calibração termina.
   motorLeft.pwmOutput(0);
@@ -99,6 +103,7 @@ void runCalibration() {
   // invertReadings = true: pista preta, linha branca (LineTracker.hpp).
   lineTracker = new LineTracker(PID_KP, PID_KI, PID_KD, calibrationMin,
                                 calibrationMax, /*invertReadings=*/true);
+  statusLed.on(); // aceso fixo = pronto pra receber o Start
 }
 
 // -----------------------------------------------------------------------------
@@ -107,6 +112,9 @@ void runCalibration() {
 // correction negativa = linha à esquerda -> motor esquerdo desacelera,
 // direito acelera (o robô vira pra esquerda) e vice-versa.
 void applyMotorSpeeds(float correction) {
+  if(correction > BASE_SPEED) correction = BASE_SPEED;
+  if(correction < -BASE_SPEED) correction = -BASE_SPEED;
+
   int32_t leftSpeed  = BASE_SPEED - (int32_t)correction;
   int32_t rightSpeed = BASE_SPEED + (int32_t)correction;
 
@@ -120,6 +128,9 @@ void setup() {
   checkPinsConfigured();
 
   ble.begin(BLE_DEVICE_NAME);
+
+  statusLed.begin();
+  statusLed.blinkBlocking(1); // 1 pisca = ligado, esperando Calibrate
 }
 
 void loop() {
@@ -135,6 +146,7 @@ void loop() {
 
   case RobotState::WAITING_START:
     if(command == BluetoothBLE::Command::Start) {
+      statusLed.off(); // apagado = rodando
       robotState = RobotState::RUNNING;
     } else if(command == BluetoothBLE::Command::Calibrate) {
       // Permite recalibrar antes de começar a andar de verdade.
@@ -146,6 +158,7 @@ void loop() {
     if(command == BluetoothBLE::Command::Stop) {
       motorLeft.pwmOutput(0);
       motorRight.pwmOutput(0);
+      statusLed.on(); // aceso fixo de novo = pronto pra receber Start
       robotState = RobotState::WAITING_START;
       break;
     }

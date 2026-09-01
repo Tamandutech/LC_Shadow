@@ -5,20 +5,28 @@
 #include "env.hpp"
 
 // Drivers
+#include "drivers/BluetoothBLE/BluetoothBLE.hpp"
 #include "drivers/LineSensorArray/LineSensorArray.hpp"
 #include "drivers/MotorDriver/MotorDriver.hpp"
 
 // Lógica
 #include "logic/LineTracker/LineTracker.hpp"
 
+
 LineSensorArray lineSensors;
 MotorDriver     motorLeft(GPIO_DIRECTION_A, GPIO_PWM_A, PWM_CHANNEL_MOTOR_A);
 MotorDriver     motorRight(GPIO_DIRECTION_B, GPIO_PWM_B, PWM_CHANNEL_MOTOR_B);
+BluetoothBLE    ble;
+
 
 // O LineTracker só pode ser criado DEPOIS da calibração (ele precisa do
 // min/max de cada sensor no construtor), então começa como ponteiro nulo e é
 // criado dentro de setup(), depois da calibração rodar.
 LineTracker *lineTracker = nullptr;
+
+// Estado do robô, usado para controlar o fluxo de execução no loop().
+enum class RobotState { WAITING_CALIBRATION, WAITING_START, RUNNING };
+RobotState robotState = RobotState::WAITING_CALIBRATION;
 
 // -----------------------------------------------------------------------------
 // Safety lock
@@ -52,9 +60,11 @@ void checkPinsConfigured() {
   }
 }
 
-void runCalibration(int calibrationMin[NUM_LINE_SENSORS],
-                    int calibrationMax[NUM_LINE_SENSORS]) {
-  Serial.println("Calibrando... girando no proprio eixo.");
+void runCalibration() {
+  delay(POSITIONING_DELAY_MS);
+
+  int calibrationMin[NUM_LINE_SENSORS];
+  int calibrationMax[NUM_LINE_SENSORS];
 
   // Começa cada mínimo "artificialmente alto" e cada máximo "artificialmente
   // baixo", assim a primeira leitura real sempre corrige os dois.
@@ -83,7 +93,12 @@ void runCalibration(int calibrationMin[NUM_LINE_SENSORS],
   motorLeft.pwmOutput(0);
   motorRight.pwmOutput(0);
 
-  Serial.println("Calibracao concluida.");
+  // Evita memory leak se o lineTracker já tinha sido criado antes
+  // (recalibração).
+  delete lineTracker;
+  // invertReadings = true: pista preta, linha branca (LineTracker.hpp).
+  lineTracker = new LineTracker(PID_KP, PID_KI, PID_KD, calibrationMin,
+                                calibrationMax, /*invertReadings=*/true);
 }
 
 // -----------------------------------------------------------------------------
@@ -104,23 +119,41 @@ void setup() {
 
   checkPinsConfigured();
 
-  Serial.println(
-      "Posicione o robo na pista. Calibracao automatica em breve...");
-  delay(POSITIONING_DELAY_MS);
-
-  int calibrationMin[NUM_LINE_SENSORS];
-  int calibrationMax[NUM_LINE_SENSORS];
-  runCalibration(calibrationMin, calibrationMax);
-
-  // Só agora cria o LineTracker, já com a calibração real.
-  // invertReadings = true: pista preta, linha branca (LineTracker.hpp).
-  lineTracker = new LineTracker(PID_KP, PID_KI, PID_KD, calibrationMin,
-                                calibrationMax, /*invertReadings=*/true);
+  ble.begin(BLE_DEVICE_NAME);
 }
 
 void loop() {
-  auto  rawReadings = lineSensors.readAll();
-  float correction  = lineTracker->update(rawReadings.data());
+  BluetoothBLE::Command command = ble.consumeCommand();
 
-  applyMotorSpeeds(correction);
+  switch(robotState) {
+  case RobotState::WAITING_CALIBRATION:
+    if(command == BluetoothBLE::Command::Calibrate) {
+      runCalibration();
+      robotState = RobotState::WAITING_START;
+    }
+    break;
+
+  case RobotState::WAITING_START:
+    if(command == BluetoothBLE::Command::Start) {
+      robotState = RobotState::RUNNING;
+    } else if(command == BluetoothBLE::Command::Calibrate) {
+      // Permite recalibrar antes de começar a andar de verdade.
+      runCalibration();
+    }
+    break;
+
+  case RobotState::RUNNING: {
+    if(command == BluetoothBLE::Command::Stop) {
+      motorLeft.pwmOutput(0);
+      motorRight.pwmOutput(0);
+      robotState = RobotState::WAITING_START;
+      break;
+    }
+
+    auto  rawReadings = lineSensors.readAll();
+    float correction  = lineTracker->update(rawReadings.data());
+    applyMotorSpeeds(correction);
+    break;
+  }
+  }
 }

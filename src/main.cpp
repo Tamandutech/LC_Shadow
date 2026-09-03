@@ -143,35 +143,4 @@ void loop() {
       NuSerial.println("Unknown command");
     }
   }
-
-
-  /* BluetoothBLE::Command command = ble.consumeCommand();
-
-  switch(robotState) {
-  case RobotState::WAITING_CALIBRATION:
-    if(command == BluetoothBLE::Command::Calibrate) {
-      runCalibration();
-      robotState = RobotState::WAITING_START;
-    }
-    break;
-
-  case RobotState::WAITING_START:
-    if(command == BluetoothBLE::Command::Start) {
-      robotState = RobotState::RUNNING;
-      ble.sendTelemetry("Iniciando.");
-    } else if(command == BluetoothBLE::Command::Calibrate) {
-      ble.sendTelemetry("Calibrando");
-      runCalibration();
-    }
-    break;
-
-  case RobotState::RUNNING: {
-    if(command == BluetoothBLE::Command::Stop) {
-      motorLeft.pwmOutput(0);
-      motorRight.pwmOutput(0);
-      robotState = RobotState::WAITING_START;
-      break;
-      }
-    }
-  }*/
 }

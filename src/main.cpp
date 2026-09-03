@@ -173,8 +173,12 @@ void loop() {
                           : "Calibrated - AVISO: timeout, algum sensor pode "
                             "nao ter sido calibrado direito");
     } else if(command == "Start") {
-      robotState = RobotState::RUNNING;
-      NuSerial.println("Running");
+      if(lineTracker == nullptr) {
+        NuSerial.println("Erro: calibre antes de dar Start");
+      } else {
+        robotState = RobotState::RUNNING;
+        NuSerial.println("Running");
+      }
     } else if(command == "Stop") {
       motorLeft.pwmOutput(0);
       motorRight.pwmOutput(0);
@@ -183,5 +187,14 @@ void loop() {
     } else {
       NuSerial.println("Unknown command");
     }
+  }
+
+  // É pra fazer o tobô andar certinho quando der Start
+  // NOTA: TEM que fazer o Calibrate antes do Start, senão o lineTracker é nulo
+  // e pode crashar ;-;
+  if(robotState == RobotState::RUNNING && lineTracker != nullptr) {
+    auto  rawReadings = lineSensors.readAll();
+    float correction  = lineTracker->update(rawReadings.data());
+    applyMotorSpeeds(correction);
   }
 }

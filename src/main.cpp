@@ -117,13 +117,35 @@ void applyMotorSpeeds(float correction) {
 void setup() {
   Serial.begin(115200);
 
-  checkPinsConfigured();
-
   ble.begin(BLE_DEVICE_NAME);
+
+  checkPinsConfigured();
 }
 
 void loop() {
-  BluetoothBLE::Command command = ble.consumeCommand();
+
+  if(NuSerial.available()) {
+    String command = NuSerial.readStringUntil('\n');
+    command.trim(); // Remove espaços em branco no início e no fim
+
+    if(command == "Calibrate") {
+      runCalibration();
+      NuSerial.println("Calibrated");
+    } else if(command == "Start") {
+      robotState = RobotState::RUNNING;
+      NuSerial.println("Running");
+    } else if(command == "Stop") {
+      motorLeft.pwmOutput(0);
+      motorRight.pwmOutput(0);
+      robotState = RobotState::WAITING_START;
+      NuSerial.println("Stopped");
+    } else {
+      NuSerial.println("Unknown command");
+    }
+  }
+
+
+  /* BluetoothBLE::Command command = ble.consumeCommand();
 
   switch(robotState) {
   case RobotState::WAITING_CALIBRATION:
@@ -136,8 +158,9 @@ void loop() {
   case RobotState::WAITING_START:
     if(command == BluetoothBLE::Command::Start) {
       robotState = RobotState::RUNNING;
+      ble.sendTelemetry("Iniciando.");
     } else if(command == BluetoothBLE::Command::Calibrate) {
-      // Permite recalibrar antes de começar a andar de verdade.
+      ble.sendTelemetry("Calibrando");
       runCalibration();
     }
     break;
@@ -148,12 +171,7 @@ void loop() {
       motorRight.pwmOutput(0);
       robotState = RobotState::WAITING_START;
       break;
+      }
     }
-
-    auto  rawReadings = lineSensors.readAll();
-    float correction  = lineTracker->update(rawReadings.data());
-    applyMotorSpeeds(correction);
-    break;
-  }
-  }
+  }*/
 }

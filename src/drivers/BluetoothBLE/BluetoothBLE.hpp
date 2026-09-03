@@ -1,53 +1,52 @@
-#ifndef BluetoothBLE_HPP
-#define BluetoothBLE_HPP
+#ifndef BLUETOOTH_BLE_HPP
 
-#include "NimBLEDevice.h"
+#define BLUETOOTH_BLE_HPP
 
-// -----------------------------------------------------------------------------
-// Bluetooth
-// -----------------------------------------------------------------------------
-// Controla o robô via Bluetooth Low Energy (BLE), usando a biblioteca
-// NimBLE-Arduino.
-// O robô liga, fica anunciando (advertising, é como o celular reconhece o robô
-// no bluetooth) e espera comandos remotos antes de fazer qualquer coisa
-// sozinho.
-//
-// O que acontece em main.cpp:
-//   1. setup() chama ble.begin(...) logo no início.
-//   2. loop() fica parado esperando o comando "Calibrate".
-//   3. Depois de calibrar, fica esperando o comando "Start".
-//   4. "Stop" pode ser enviado a qualquer momento como parada de emergência.
-// -----------------------------------------------------------------------------
+#include <NimBLEDevice.h>
+#include <NuSerial.hpp>
+#include <atomic>
 
 class BluetoothBLE {
 public:
   enum class Command { None, Calibrate, Start, Stop };
 
-  // Inicializa o BLE, cria o serviço/characteristics e começa o advertising.
   BluetoothBLE();
-  void begin(const char *Shadow);
 
-  // Devolve o último comando recebido e limpa o status do comando
-  // (para não processar o mesmo comando várias vezes).
+  // Inicializa o BLE, cria o serviço/characteristic de comando E sobe o
+  // Nordic UART Service (NuS, via a lib NuSerial) no MESMO servidor BLE.
+  void begin(const char *deviceName);
+
+  // Devolve o último comando recebido e limpa o estado atomicamente
   Command consumeCommand();
 
+  void sendTelemetry(const String &line);
+  
+  bool isTelemetryConnected() const;
 
 private:
-  // Callbacks do NimBLE quando escreve na characteristic de comando.
-  // Fica numa classe separada porque é assim que a API do NimBLE pede
+  // Callback do NimBLE quando o celular escreve na characteristic de
+  // comando. Guarda um ponteiro pro BluetoothBLE "dono" (owner_), em vez de
+  // usar uma variável static/global
 
-  class CommandCallBacks : public NimBLECharacteristicCallbacks {
-    void onWrite(NimBLECharacteristic *pCharacteristic,
+  class CommandCallbacks : public NimBLECharacteristicCallbacks {
+  public:
+    explicit CommandCallbacks(BluetoothBLE *owner) : owner_(owner) {}
+    void onWrite(NimBLECharacteristic *characteristic,
                  NimBLEConnInfo       &connInfo) override;
+
+  private:
+    BluetoothBLE *owner_;
   };
 
-  // Ponteiro para a instância de BluetoothBLE que criou esse callback, para
-  // poder acessar o pendingCommand_ e setar o comando recebido.
   NimBLEServer         *server_;
   NimBLECharacteristic *commandCharacteristic_;
-  CommandCallBacks      commandCallbacks_;
+  CommandCallbacks      commandCallbacks_;
 
-  static volatile Command pendingCommand_;
+  // std::atomic no lugar de volatile: garante leitura/escrita atômica entre
+  // a task do NimBLE (que chama onWrite) e o loop() principal, sem as
+  // ambiguidades do "volatile". Se tudo correr bem foi essa volatilidade que
+  // causou o bug ;-; .
+  std::atomic<Command> pendingCommand_;
 };
 
 #endif

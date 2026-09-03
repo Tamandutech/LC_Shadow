@@ -34,14 +34,14 @@
 #define PWM_CHANNEL_MOTOR_A (0)
 #define PWM_CHANNEL_MOTOR_B (1)
 
-// Frequência e resolução do PWM. 8 bits = valores de 0 a 255.
+// Frequência e resolução d3o PWM. 8 bits = valores de 0 a 255.
 #define PWM_FREQUENCY_HZ    (5000)
 #define PWM_RESOLUTION_BITS (8)
 #define MAX_PWM_VALUE       (255)
 
 // --- Calibração Automática
 // Ao ligar, o robô espera os micro segundos definidos e depois calibra sozinho.
-#define POSITIONING_DELAY_MS (3000)
+#define POSITIONING_DELAY_MS (2000)
 
 // --- Parâmetros de controle ------------------------------------------------
 // Ganhos do PID. Ainda não calibrados/testados.

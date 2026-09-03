@@ -60,6 +60,13 @@ void checkPinsConfigured() {
   }
 }
 
+void finalizeCalibration(int *calMin, int *calMax) {
+  delete lineTracker; // evita memory leak em recalibração
+  lineTracker = new LineTracker(PID_KP, PID_KI, PID_KD, calMin, calMax,
+                                /*invertReadings=*/true);
+}
+
+// Calibração automática
 void runCalibration() {
   delay(POSITIONING_DELAY_MS);
 
@@ -93,12 +100,41 @@ void runCalibration() {
   motorLeft.pwmOutput(0);
   motorRight.pwmOutput(0);
 
-  // Evita memory leak se o lineTracker já tinha sido criado antes
-  // (recalibração).
-  delete lineTracker;
-  // invertReadings = true: pista preta, linha branca (LineTracker.hpp).
-  lineTracker = new LineTracker(PID_KP, PID_KI, PID_KD, calibrationMin,
-                                calibrationMax, /*invertReadings=*/true);
+  finalizeCalibration(calibrationMin, calibrationMax);
+}
+
+// Calibração manual
+bool runManualCalibration() {
+  motorLeft.pwmOutput(0);
+  motorRight.pwmOutput(0);
+
+  int calibrationMin[NUM_LINE_SENSORS];
+  int calibrationMax[NUM_LINE_SENSORS];
+  for(int i = 0; i < NUM_LINE_SENSORS; i++) {
+    calibrationMin[i] = 4095;
+    calibrationMax[i] = 0;
+  }
+
+  unsigned long startTime            = millis();
+  bool          allSensorsCalibrated = false;
+
+  while(!allSensorsCalibrated &&
+        millis() - startTime < MANUAL_CALIBRATION_TIMEOUT_MS) {
+    auto rawReadings = lineSensors.readAll();
+
+    allSensorsCalibrated = true; // assume que sim, prova o contrário abaixo
+    for(int i = 0; i < NUM_LINE_SENSORS; i++) {
+      if(rawReadings[i] < calibrationMin[i]) calibrationMin[i] = rawReadings[i];
+      if(rawReadings[i] > calibrationMax[i]) calibrationMax[i] = rawReadings[i];
+
+      if(calibrationMax[i] - calibrationMin[i] < MIN_CALIBRATION_RANGE) {
+        allSensorsCalibrated = false;
+      }
+    }
+  }
+
+  finalizeCalibration(calibrationMin, calibrationMax);
+  return allSensorsCalibrated;
 }
 
 // -----------------------------------------------------------------------------
@@ -131,6 +167,11 @@ void loop() {
     if(command == "Calibrate") {
       runCalibration();
       NuSerial.println("Calibrated");
+    } else if(command == "CalibrateManual") {
+      bool ok = runManualCalibration();
+      NuSerial.println(ok ? "Calibrated"
+                          : "Calibrated - AVISO: timeout, algum sensor pode "
+                            "nao ter sido calibrado direito");
     } else if(command == "Start") {
       robotState = RobotState::RUNNING;
       NuSerial.println("Running");

@@ -65,4 +65,10 @@
 // Bluetooth BLE
 #define BLE_DEVICE_NAME "Shadow"
 
+#define MIN_CALIBRATION_RANGE (500)
+
+// Tempo para calibração manual, caso algum sensor não tenha sido calibrado
+// corretamente
+#define MANUAL_CALIBRATION_TIMEOUT_MS (15000)
+
 #endif

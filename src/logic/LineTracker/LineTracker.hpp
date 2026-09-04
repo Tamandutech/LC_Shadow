@@ -68,6 +68,7 @@ public:
 
   // Diz se a última chamada a update() detectou a linha.
   bool isLineDetected() const;
+  void pidUpdate(float PID_KP, float PID_KD);
 
 private:
   PidState pidState_;

@@ -29,10 +29,13 @@
 #define GPIO_DIRECTION_B (37) // pino de direção do motor B (direito)
 #define GPIO_PWM_B       (38) // pino PWM do motor B (direito)
 
+#define GPIO_PWM_VACUUM (11)  // Pino PWM do motor de sucção
+
 // Canais do periférico LEDC do ESP32 usados por cada motor.
 // Não são pinos físicos, só um número de canal interno.
 #define PWM_CHANNEL_MOTOR_A (0)
 #define PWM_CHANNEL_MOTOR_B (1)
+#define PWM_CHANNEL_VACUUM  (6)
 
 // Frequência e resolução d3o PWM. 8 bits = valores de 0 a 255.
 #define PWM_FREQUENCY_HZ    (5000)
@@ -46,18 +49,19 @@
 // --- Parâmetros de controle ------------------------------------------------
 // Ganhos do PID. Ainda não calibrados/testados.
 // ajustar esses valores durante os testes na pista qnd robô estiver montado.
-#define PID_KP (1.0f)
+// #define PID_KP (0.0f)
 #define PID_KI (0.0f)
-#define PID_KD (0.0f)
+// #define PID_KD (0.0f)
 
 // Velocidade base aplicada aos dois motores antes de somar a correção do PID.
 // ajustar conforme o motor/bateria do robô.
-#define BASE_SPEED (100)
+#define BASE_SPEED (75)
+#define VAC_SPEED  (50)
 
 // Velocidade usada só durante a calibração, girando o robô no próprio eixo.
 // Pode ser mais baixa que BASE_SPEED pra girar de forma mais controlada.
 // ajustar conforme o motor/bateria do robô.
-#define CALIBRATION_SPEED (50)
+#define CALIBRATION_SPEED (60)
 
 // Duração da varredura de calibração automática (ver runCalibration()).
 #define CALIBRATION_DURATION_MS (3000)

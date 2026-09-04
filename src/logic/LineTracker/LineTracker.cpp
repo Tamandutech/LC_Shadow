@@ -78,6 +78,12 @@ LineTracker::LineTracker(float kp, float ki, float kd,
   }
 }
 
+
+void LineTracker::pidUpdate(float PID_KP, float PID_KD) {
+  PidState newPid = PidState(PID_KP, 0.00, PID_KD);
+  pidState_       = newPid;
+}
+
 float LineTracker::update(const int rawReadings[NUM_LINE_SENSORS]) {
   int normalizedReadings[NUM_LINE_SENSORS];
 

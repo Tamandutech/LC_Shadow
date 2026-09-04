@@ -12,10 +12,13 @@
 // Lógica
 #include "logic/LineTracker/LineTracker.hpp"
 
+#include <string>
+using namespace std;
 
 LineSensorArray lineSensors;
 MotorDriver     motorLeft(GPIO_DIRECTION_A, GPIO_PWM_A, PWM_CHANNEL_MOTOR_A);
 MotorDriver     motorRight(GPIO_DIRECTION_B, GPIO_PWM_B, PWM_CHANNEL_MOTOR_B);
+VacuumDriver    motorVacuum(GPIO_PWM_VACUUM, PWM_CHANNEL_VACUUM);
 BluetoothBLE    ble;
 
 
@@ -27,6 +30,9 @@ LineTracker *lineTracker = nullptr;
 // Estado do robô, usado para controlar o fluxo de execução no loop().
 enum class RobotState { WAITING_CALIBRATION, WAITING_START, RUNNING };
 RobotState robotState = RobotState::WAITING_CALIBRATION;
+
+float PID_KP = 0.0;
+float PID_KD = 0.0;
 
 // -----------------------------------------------------------------------------
 // Safety lock
@@ -107,6 +113,7 @@ void runCalibration() {
 bool runManualCalibration() {
   motorLeft.pwmOutput(0);
   motorRight.pwmOutput(0);
+  motorVacuum.pwmOutput(0);
 
   int calibrationMin[NUM_LINE_SENSORS];
   int calibrationMax[NUM_LINE_SENSORS];
@@ -143,9 +150,13 @@ bool runManualCalibration() {
 // correction negativa = linha à esquerda -> motor esquerdo desacelera,
 // direito acelera (o robô vira pra esquerda) e vice-versa.
 void applyMotorSpeeds(float correction) {
-  int32_t leftSpeed  = BASE_SPEED - (int32_t)correction;
-  int32_t rightSpeed = BASE_SPEED + (int32_t)correction;
+  int32_t leftSpeed   = BASE_SPEED + (int32_t)correction;
+  int32_t rightSpeed  = BASE_SPEED - (int32_t)correction;
+  int32_t adjustSpeed = leftSpeed / rightSpeed;
+  int32_t vacuumSpeed = VAC_SPEED + ((adjustSpeed % 1) * 30);
 
+
+  motorVacuum.pwmOutput(vacuumSpeed);
   motorLeft.pwmOutput(leftSpeed);
   motorRight.pwmOutput(rightSpeed);
 }
@@ -157,6 +168,7 @@ void setup() {
 
   checkPinsConfigured();
 }
+
 
 void loop() {
 
@@ -182,16 +194,38 @@ void loop() {
     } else if(command == "Stop") {
       motorLeft.pwmOutput(0);
       motorRight.pwmOutput(0);
+      motorVacuum.pwmOutput(0);
       robotState = RobotState::WAITING_START;
       NuSerial.println("Stopped");
+    } else if(command == "kd") {
+      NuSerial.println("format x.xxf");
+      while(NuSerial.available() == 0) {
+        String kd = NuSerial.readString();
+        PID_KD    = kd.toFloat();
+        delay(3000);
+        lineTracker->pidUpdate(PID_KP, PID_KD);
+        NuSerial.println(PID_KD);
+
+        break;
+      }
+    } else if(command == "kp") {
+      NuSerial.println("format x.xxf");
+      while(NuSerial.available() == 0) {
+        String kp = NuSerial.readString();
+        PID_KP    = kp.toFloat();
+        delay(3000);
+        lineTracker->pidUpdate(PID_KP, PID_KD);
+        NuSerial.println(PID_KP);
+        break;
+      }
     } else {
       NuSerial.println("Unknown command");
     }
   }
 
   // É pra fazer o tobô andar certinho quando der Start
-  // NOTA: TEM que fazer o Calibrate antes do Start, senão o lineTracker é nulo
-  // e pode crashar ;-;
+  // NOTA: TEM que fazer o Calibrate antes do Start, senão o lineTracker é
+  // nulo e pode crashar ;-;
   if(robotState == RobotState::RUNNING && lineTracker != nullptr) {
     auto  rawReadings = lineSensors.readAll();
     float correction  = lineTracker->update(rawReadings.data());

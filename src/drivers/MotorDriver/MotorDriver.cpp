@@ -22,3 +22,17 @@ void MotorDriver::pwmOutput(int32_t value) {
 
   ledcWrite(pwmChannel_, magnitude);
 }
+
+VacuumDriver::VacuumDriver(int pwmPin, uint8_t pwmChannel)
+    : pwmPin_(pwmPin), pwmChannel_(pwmChannel) {
+
+  ledcSetup(pwmChannel_, PWM_FREQUENCY_HZ, PWM_RESOLUTION_BITS);
+  ledcAttachPin(pwmPin_, pwmChannel_);
+}
+
+void VacuumDriver::pwmOutput(int32_t value) {
+  int32_t magnitude = value < 0 ? -value : value;
+  if(magnitude > MAX_PWM_VALUE) magnitude = MAX_PWM_VALUE;
+
+  ledcWrite(pwmChannel_, magnitude);
+}

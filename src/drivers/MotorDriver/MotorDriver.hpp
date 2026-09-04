@@ -30,4 +30,15 @@ private:
   uint8_t pwmChannel_;
 };
 
+class VacuumDriver {
+public:
+  VacuumDriver(int pwmPin, uint8_t pwmChannel);
+
+  void pwmOutput(int32_t value);
+
+private:
+  int     pwmPin_;
+  uint8_t pwmChannel_;
+};
+
 #endif

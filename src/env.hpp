@@ -55,8 +55,8 @@
 
 // Velocidade base aplicada aos dois motores antes de somar a correção do PID.
 // ajustar conforme o motor/bateria do robô.
-#define BASE_SPEED (75)
-#define VAC_SPEED  (50)
+// #define BASE_SPEED (100)
+// #define VAC_SPEED  (50)
 
 // Velocidade usada só durante a calibração, girando o robô no próprio eixo.
 // Pode ser mais baixa que BASE_SPEED pra girar de forma mais controlada.

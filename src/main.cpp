@@ -31,8 +31,11 @@ LineTracker *lineTracker = nullptr;
 enum class RobotState { WAITING_CALIBRATION, WAITING_START, RUNNING };
 RobotState robotState = RobotState::WAITING_CALIBRATION;
 
-float PID_KP = 0.0;
-float PID_KD = 0.0;
+float PID_KP     = 0.1;
+float PID_KD     = 5.0;
+int   BASE_SPEED = 125;
+int   VAC_SPEED  = 50;
+
 
 // -----------------------------------------------------------------------------
 // Safety lock
@@ -114,34 +117,39 @@ bool runManualCalibration() {
   motorLeft.pwmOutput(0);
   motorRight.pwmOutput(0);
   motorVacuum.pwmOutput(0);
+  delay(POSITIONING_DELAY_MS);
 
   int calibrationMin[NUM_LINE_SENSORS];
   int calibrationMax[NUM_LINE_SENSORS];
+
+  // Começa cada mínimo "artificialmente alto" e cada máximo "artificialmente
+  // baixo", assim a primeira leitura real sempre corrige os dois.
   for(int i = 0; i < NUM_LINE_SENSORS; i++) {
     calibrationMin[i] = 4095;
     calibrationMax[i] = 0;
   }
 
-  unsigned long startTime            = millis();
-  bool          allSensorsCalibrated = false;
+  // Gira no próprio eixo: motor esquerdo pra frente, direito pra trás.
+  // Isso faz a linha do multiplexador passar sob todos os 12 sensores em
+  // algum momento, sem o robô sair do lugar.
+  motorLeft.pwmOutput(CALIBRATION_SPEED);
+  motorRight.pwmOutput(-CALIBRATION_SPEED);
 
-  while(!allSensorsCalibrated &&
-        millis() - startTime < MANUAL_CALIBRATION_TIMEOUT_MS) {
+  unsigned long startTime = millis();
+  while(millis() - startTime < CALIBRATION_DURATION_MS) {
     auto rawReadings = lineSensors.readAll();
 
-    allSensorsCalibrated = true; // assume que sim, prova o contrário abaixo
     for(int i = 0; i < NUM_LINE_SENSORS; i++) {
       if(rawReadings[i] < calibrationMin[i]) calibrationMin[i] = rawReadings[i];
       if(rawReadings[i] > calibrationMax[i]) calibrationMax[i] = rawReadings[i];
-
-      if(calibrationMax[i] - calibrationMin[i] < MIN_CALIBRATION_RANGE) {
-        allSensorsCalibrated = false;
-      }
     }
   }
 
+  // Para os motores assim que a calibração termina.
+  motorLeft.pwmOutput(0);
+  motorRight.pwmOutput(0);
+
   finalizeCalibration(calibrationMin, calibrationMax);
-  return allSensorsCalibrated;
 }
 
 // -----------------------------------------------------------------------------
@@ -152,9 +160,7 @@ bool runManualCalibration() {
 void applyMotorSpeeds(float correction) {
   int32_t leftSpeed   = BASE_SPEED + (int32_t)correction;
   int32_t rightSpeed  = BASE_SPEED - (int32_t)correction;
-  int32_t adjustSpeed = leftSpeed / rightSpeed;
-  int32_t vacuumSpeed = VAC_SPEED + ((adjustSpeed % 1) * 30);
-
+  int32_t vacuumSpeed = VAC_SPEED;
 
   motorVacuum.pwmOutput(vacuumSpeed);
   motorLeft.pwmOutput(leftSpeed);
@@ -180,14 +186,20 @@ void loop() {
       runCalibration();
       NuSerial.println("Calibrated");
     } else if(command == "CalibrateManual") {
-      bool ok = runManualCalibration();
-      NuSerial.println(ok ? "Calibrated"
-                          : "Calibrated - AVISO: timeout, algum sensor pode "
-                            "nao ter sido calibrado direito");
+      runManualCalibration();
+      NuSerial.println("Calibrated");
     } else if(command == "Start") {
       if(lineTracker == nullptr) {
         NuSerial.println("Erro: calibre antes de dar Start");
       } else {
+        NuSerial.println("Speed:");
+        NuSerial.println(BASE_SPEED);
+        NuSerial.println("Vacuum:");
+        NuSerial.println(VAC_SPEED);
+        NuSerial.println("KP:");
+        NuSerial.println(PID_KP);
+        NuSerial.println("KD:");
+        NuSerial.println(PID_KD);
         robotState = RobotState::RUNNING;
         NuSerial.println("Running");
       }
@@ -198,24 +210,40 @@ void loop() {
       robotState = RobotState::WAITING_START;
       NuSerial.println("Stopped");
     } else if(command == "kd") {
-      NuSerial.println("format x.xxf");
+      // NuSerial.println("format x.xxf");
       while(NuSerial.available() == 0) {
         String kd = NuSerial.readString();
         PID_KD    = kd.toFloat();
-        delay(3000);
+        delay(2000);
         lineTracker->pidUpdate(PID_KP, PID_KD);
         NuSerial.println(PID_KD);
 
         break;
       }
     } else if(command == "kp") {
-      NuSerial.println("format x.xxf");
+      // NuSerial.println("format x.xxf");
       while(NuSerial.available() == 0) {
         String kp = NuSerial.readString();
         PID_KP    = kp.toFloat();
-        delay(3000);
+        delay(2000);
         lineTracker->pidUpdate(PID_KP, PID_KD);
         NuSerial.println(PID_KP);
+        break;
+      }
+    } else if(command == "setspeed") {
+      while(NuSerial.available() == 0) {
+        String sp  = NuSerial.readString();
+        BASE_SPEED = sp.toInt();
+        delay(2000);
+        NuSerial.println(BASE_SPEED);
+        break;
+      }
+    } else if(command == "setvac") {
+      while(NuSerial.available() == 0) {
+        String vs = NuSerial.readString();
+        VAC_SPEED = vs.toInt();
+        delay(2000);
+        NuSerial.println(VAC_SPEED);
         break;
       }
     } else {

@@ -32,9 +32,9 @@ enum class RobotState { WAITING_CALIBRATION, WAITING_START, RUNNING };
 RobotState robotState = RobotState::WAITING_CALIBRATION;
 
 float PID_KP     = 0.1;
-float PID_KD     = 5.0;
-int   BASE_SPEED = 125;
-int   VAC_SPEED  = 50;
+float PID_KD     = 2;
+int   BASE_SPEED = 115;
+int   VAC_SPEED  = 0;
 
 
 // -----------------------------------------------------------------------------

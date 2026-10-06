@@ -3,13 +3,17 @@
 #include "Arduino.h"
 #include "env.hpp"
 
-MotorDriver::MotorDriver(int directionPin, int pwmPin, uint8_t pwmChannel)
-    : directionPin_(directionPin), pwmPin_(pwmPin), pwmChannel_(pwmChannel) {
+MotorDriver::MotorDriver(int directionPin, int pwmPin)
+    : directionPin_(directionPin), pwmPin_(pwmPin) {}
+
+void MotorDriver::begin() {
   pinMode(directionPin_, OUTPUT);
 
-  // Configura o canal de PWM (frequência + resolução) e liga ele ao pino.
-  ledcSetup(pwmChannel_, PWM_FREQUENCY_HZ, PWM_RESOLUTION_BITS);
-  ledcAttachPin(pwmPin_, pwmChannel_);
+
+  analogWriteResolution(PWM_RESOLUTION_BITS);
+  analogWriteFrequency(PWM_FREQUENCY_HZ);
+
+  analogWrite(pwmPin_, 0);
 }
 
 void MotorDriver::pwmOutput(int32_t value) {
@@ -20,19 +24,25 @@ void MotorDriver::pwmOutput(int32_t value) {
   int32_t magnitude = value < 0 ? -value : value;
   if(magnitude > MAX_PWM_VALUE) magnitude = MAX_PWM_VALUE;
 
-  ledcWrite(pwmChannel_, magnitude);
+  analogWrite(pwmPin_, magnitude);
 }
 
-VacuumDriver::VacuumDriver(int pwmPin, uint8_t pwmChannel)
-    : pwmPin_(pwmPin), pwmChannel_(pwmChannel) {
+VacuumDriver::VacuumDriver(int pwmPin) : pwmPin_(pwmPin) {}
 
-  ledcSetup(pwmChannel_, PWM_FREQUENCY_HZ, PWM_RESOLUTION_BITS);
-  ledcAttachPin(pwmPin_, pwmChannel_);
+void VacuumDriver::begin() {
+  if(pwmPin_ < 0) return; // sucção ainda não ligada
+
+  analogWriteResolution(PWM_RESOLUTION_BITS);
+  analogWriteFrequency(PWM_FREQUENCY_HZ);
+
+  analogWrite(pwmPin_, 0);
 }
 
 void VacuumDriver::pwmOutput(int32_t value) {
+  if(pwmPin_ < 0) return; // sucção ainda não ligada
+
   int32_t magnitude = value < 0 ? -value : value;
   if(magnitude > MAX_PWM_VALUE) magnitude = MAX_PWM_VALUE;
 
-  ledcWrite(pwmChannel_, magnitude);
+  analogWrite(pwmPin_, magnitude);
 }

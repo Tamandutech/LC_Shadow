@@ -19,20 +19,14 @@
 // -----------------------------------------------------------------------------
 class LineSensorArray {
 public:
-  LineSensorArray();
+  LineSensorArray() = default;
 
-  // Varre os 12 canais do multiplexador (endereça cada um e faz analogRead)
-  // e devolve um array com os 12 valores brutos, na mesma ordem definida em
-  // GPIO_MULTIPLEXER_LINE_SENSORS_INDEX (env.hpp).
+  // Configura os pinos como entrada analógica.
+  void begin();
+
+  // Lê os 12 sensores e devolve os valores brutos, na mesma ordem de
+  // GPIO_LINE_SENSORS (esquerda -> direita).
   std::array<int32_t, NUM_LINE_SENSORS> readAll();
-
-private:
-  // Configura os pinos de endereço e o pino analógico como entrada/saída.
-  void configurePins_();
-
-  // Escreve o endereço binário (0 a 11) nos pinos de endereço do
-  // multiplexador, selecionando qual sensor será lido em seguida.
-  void selectChannel_(uint8_t channel);
 };
 
 #endif

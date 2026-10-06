@@ -8,55 +8,42 @@
 // hardware estiver montado.
 // =============================================================================
 
-// Quantidade de sensores de linha lidos pelo multiplexador.
+// Quantidade de sensores de linha.
 #define NUM_LINE_SENSORS (12)
 
-// --- Multiplexador dos sensores de linha ------------------------------------
+// --- Sensores de linha ------------------------------------
 
-#define GPIO_MULTIPLEXER_DIGITAL_ADDRESS {39, 40, 41, 42} // 4 pinos de endereço
-#define GPIO_MULTIPLEXER_ANALOG_INPUT    (10)             // 1 pino analógico
-
-// Ordem dos 12 sensores de linha nos canais do multiplexador.
-#define GPIO_MULTIPLEXER_LINE_SENSORS_INDEX \
-  {13, 12, 11, 10, 9, 8, 5, 4, 3, 2, 1, 0}
+#define GPIO_LINE_SENSORS \
+  {PB0, PC5, PC4, PA7, PA6, PA5, PA4, PA3, PA2, PA1, PA0, PC3}
 
 // --- Motores ------------------------------------------------------------
 // Cada motor tem um pino de direção (gira sentido horário/anti-horário) e
 // um pino de PWM (controla a velocidade).
-#define GPIO_DIRECTION_A (9)  // pino de direção do motor A (esquerdo)
-#define GPIO_PWM_A       (3)  // pino PWM do motor A (esquerdo)
+#define GPIO_DIRECTION_A (PC7) // pino de direção do motor A (esquerdo)
+#define GPIO_PWM_A       (PC6) // pino PWM do motor A (esquerdo)
 
-#define GPIO_DIRECTION_B (37) // pino de direção do motor B (direito)
-#define GPIO_PWM_B       (38) // pino PWM do motor B (direito)
+#define GPIO_DIRECTION_B (PC9) // pino de direção do motor B (direito)
+#define GPIO_PWM_B       (PC8) // pino PWM do motor B (direito)
 
-#define GPIO_PWM_VACUUM (11)  // Pino PWM do motor de sucção
+#define GPIO_PWM_VACUUM (11)   // Pino PWM do motor de sucção
 
-// Canais do periférico LEDC do ESP32 usados por cada motor.
-// Não são pinos físicos, só um número de canal interno.
+/* Canais do periférico LEDC do ESP32 usados por cada motor.
+Não são pinos físicos, só um número de canal interno.
 #define PWM_CHANNEL_MOTOR_A (0)
 #define PWM_CHANNEL_MOTOR_B (1)
-#define PWM_CHANNEL_VACUUM  (6)
+#define PWM_CHANNEL_VACUUM  (6) */
 
 // Frequência e resolução d3o PWM. 8 bits = valores de 0 a 255.
 #define PWM_FREQUENCY_HZ    (5000)
 #define PWM_RESOLUTION_BITS (8)
 #define MAX_PWM_VALUE       (255)
 
-// --- Calibração Automática
+// --- Motor de sucção -------------------------------
+#define GPIO_PWM_VACUUM (PC12)
+
+// --- Calibração Automática----------------------------------
 // Ao ligar, o robô espera os micro segundos definidos e depois calibra sozinho.
 #define POSITIONING_DELAY_MS (2000)
-
-// --- Parâmetros de controle ------------------------------------------------
-// Ganhos do PID. Ainda não calibrados/testados.
-// ajustar esses valores durante os testes na pista qnd robô estiver montado.
-// #define PID_KP (0.0f)
-#define PID_KI (0.0f)
-// #define PID_KD (0.0f)
-
-// Velocidade base aplicada aos dois motores antes de somar a correção do PID.
-// ajustar conforme o motor/bateria do robô.
-// #define BASE_SPEED (100)
-// #define VAC_SPEED  (50)
 
 // Velocidade usada só durante a calibração, girando o robô no próprio eixo.
 // Pode ser mais baixa que BASE_SPEED pra girar de forma mais controlada.
@@ -66,13 +53,11 @@
 // Duração da varredura de calibração automática (ver runCalibration()).
 #define CALIBRATION_DURATION_MS (3000)
 
-// Bluetooth BLE
-#define BLE_DEVICE_NAME "Shadow"
+// --- Bluetooth (módulo externo por UART) -------------------------------------
 
-#define MIN_CALIBRATION_RANGE (500)
+#define BT_UART_RX_PIN PA10
+#define BT_UART_TX_PIN PA9
 
-// Tempo para calibração manual, caso algum sensor não tenha sido calibrado
-// corretamente
-#define MANUAL_CALIBRATION_TIMEOUT_MS (15000)
+#define BT_BAUD (230400)
 
 #endif

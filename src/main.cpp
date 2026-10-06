@@ -16,10 +16,9 @@
 using namespace std;
 
 LineSensorArray lineSensors;
-MotorDriver     motorLeft(GPIO_DIRECTION_A, GPIO_PWM_A, PWM_CHANNEL_MOTOR_A);
-MotorDriver     motorRight(GPIO_DIRECTION_B, GPIO_PWM_B, PWM_CHANNEL_MOTOR_B);
-VacuumDriver    motorVacuum(GPIO_PWM_VACUUM, PWM_CHANNEL_VACUUM);
-BluetoothBLE    ble;
+MotorDriver     motorLeft(GPIO_DIRECTION_A, GPIO_PWM_A);
+MotorDriver     motorRight(GPIO_DIRECTION_B, GPIO_PWM_B);
+VacuumDriver    motorVacuum(GPIO_PWM_VACUUM);
 
 
 // O LineTracker só pode ser criado DEPOIS da calibração (ele precisa do
@@ -53,8 +52,8 @@ void haltWithError(const char *message) {
 }
 
 void checkPinsConfigured() {
-  const int addressPins[4]   = GPIO_MULTIPLEXER_DIGITAL_ADDRESS;
-  bool      allAddressPinsOk = true;
+  const int sensorPins[NUM_LINE_SENSORS] = GPIO_LINE_SENSORS;
+  bool      allAddressPinsOk             = true;
   for(int i = 0; i < 4; i++) {
     if(addressPins[i] == -1) allAddressPinsOk = false;
   }
@@ -113,7 +112,7 @@ void runCalibration() {
 }
 
 // Calibração manual
-bool runManualCalibration() {
+void runManualCalibration() {
   motorLeft.pwmOutput(0);
   motorRight.pwmOutput(0);
   motorVacuum.pwmOutput(0);
@@ -130,7 +129,7 @@ bool runManualCalibration() {
   }
 
   // Gira no próprio eixo: motor esquerdo pra frente, direito pra trás.
-  // Isso faz a linha do multiplexador passar sob todos os 12 sensores em
+  // Isso faz a linha passar sob todos os 12 sensores em
   // algum momento, sem o robô sair do lugar.
   motorLeft.pwmOutput(CALIBRATION_SPEED);
   motorRight.pwmOutput(-CALIBRATION_SPEED);
@@ -170,9 +169,16 @@ void applyMotorSpeeds(float correction) {
 void setup() {
   Serial.begin(115200);
 
-  ble.begin(BLE_DEVICE_NAME);
+  bluetoothBegin(BT_BAUD);
 
   checkPinsConfigured();
+
+  analogReadResolution(12);
+
+  lineSensors.begin();
+  motorLeft.begin();
+  motorRight.begin();
+  motorVacuum.begin();
 }
 
 

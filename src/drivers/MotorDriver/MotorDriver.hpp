@@ -17,7 +17,10 @@ public:
   // pwmPin: pino que recebe o sinal PWM (controla a velocidade).
   // pwmChannel: canal do periférico LEDC do ESP32 (0 a 7 disponíveis).
   // Cada motor precisa de um canal DIFERENTE (ex: esquerda=0, direita=1).
-  MotorDriver(int directionPin, int pwmPin, uint8_t pwmChannel);
+  MotorDriver(int directionPin, int pwmPin);
+
+  // Configura os pinos e o PWM. Chamar no setup().
+  void begin();
 
   // Aplica uma velocidade ao motor.
   // value: de -maxPwm a +maxPwm. Sinal define o sentido (positivo = frente,
@@ -25,20 +28,19 @@ public:
   void pwmOutput(int32_t value);
 
 private:
-  int     directionPin_;
-  int     pwmPin_;
-  uint8_t pwmChannel_;
+  int directionPin_;
+  int pwmPin_;
 };
 
 class VacuumDriver {
 public:
-  VacuumDriver(int pwmPin, uint8_t pwmChannel);
+  explicit VacuumDriver(int pwmPin);
 
+  void begin();
   void pwmOutput(int32_t value);
 
 private:
-  int     pwmPin_;
-  uint8_t pwmChannel_;
+  int pwmPin_;
 };
 
 #endif

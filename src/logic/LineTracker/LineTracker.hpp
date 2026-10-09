@@ -2,6 +2,7 @@
 #define LINE_TRACKER_HPP
 
 #include "env.hpp"
+#include <array>
 
 // -----------------------------------------------------------------------------
 // Nenhuma linha aqui sabe o que é um "pino". Só recebe e devolve números.
@@ -64,7 +65,7 @@ public:
 
   // Processa um ciclo completo: normaliza -> calcula erro -> roda o PID.
   // Devolve a saída do PID (a correção de direção a aplicar nos motores).
-  float update(const int rawReadings[NUM_LINE_SENSORS]);
+  float update(long int rawReadings[NUM_LINE_SENSORS]);
 
   // Diz se a última chamada a update() detectou a linha.
   bool isLineDetected() const;

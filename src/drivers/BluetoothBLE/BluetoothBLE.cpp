@@ -2,6 +2,7 @@
 
 #include "env.hpp"
 
-HardwareSerial &NuSerial = bluetoothSerial;
-
-void bluetoothBegin(unsigned long baud) { bluetoothSerial.begin(baud); }
+void bluetoothBegin(unsigned long baud) {
+  // O baud rate precisa ser IGUAL ao configurado no módulo Bluetooth.
+  NuSerial.begin(baud);
+}

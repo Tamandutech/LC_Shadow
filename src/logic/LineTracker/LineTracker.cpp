@@ -84,7 +84,7 @@ void LineTracker::pidUpdate(float PID_KP, float PID_KD) {
   pidState_       = newPid;
 }
 
-float LineTracker::update(const int rawReadings[NUM_LINE_SENSORS]) {
+float LineTracker::update(long int rawReadings[NUM_LINE_SENSORS]) {
   int normalizedReadings[NUM_LINE_SENSORS];
 
   // 1: normaliza cada sensor individualmente, usando a calibração específica

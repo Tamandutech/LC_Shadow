@@ -13,6 +13,7 @@
 #include "logic/LineTracker/LineTracker.hpp"
 
 #include <string>
+#include <array>
 using namespace std;
 
 LineSensorArray lineSensors;
@@ -31,6 +32,7 @@ enum class RobotState { WAITING_CALIBRATION, WAITING_START, RUNNING };
 RobotState robotState = RobotState::WAITING_CALIBRATION;
 
 float PID_KP     = 0.1;
+float PID_KI     = 0.00;
 float PID_KD     = 2;
 int   BASE_SPEED = 115;
 int   VAC_SPEED  = 0;
@@ -51,14 +53,14 @@ void haltWithError(const char *message) {
   }
 }
 
-void checkPinsConfigured() {
+/*void checkPinsConfigured() {
   const int sensorPins[NUM_LINE_SENSORS] = GPIO_LINE_SENSORS;
   bool      allAddressPinsOk             = true;
   for(int i = 0; i < 4; i++) {
     if(addressPins[i] == -1) allAddressPinsOk = false;
   }
 
-  bool allPinsOk = allAddressPinsOk && GPIO_MULTIPLEXER_ANALOG_INPUT != -1 &&
+  bool allPinsOk = allAddressPinsOk && GPIO_LINE_SENSORS != -1 &&
                    GPIO_DIRECTION_A != -1 && GPIO_DIRECTION_B != -1 &&
                    GPIO_PWM_A != -1 && GPIO_PWM_B != -1;
 
@@ -66,7 +68,7 @@ void checkPinsConfigured() {
     haltWithError("ERRO: existe pino com valor -1 em env.hpp. "
                   "Preencha os TODOs antes de rodar o robo.");
   }
-}
+}*/
 
 void finalizeCalibration(int *calMin, int *calMax) {
   delete lineTracker; // evita memory leak em recalibração
@@ -170,8 +172,6 @@ void setup() {
   Serial.begin(115200);
 
   bluetoothBegin(BT_BAUD);
-
-  checkPinsConfigured();
 
   analogReadResolution(12);
 

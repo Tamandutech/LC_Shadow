@@ -25,7 +25,8 @@
 #define GPIO_DIRECTION_B (PC9) // pino de direção do motor B (direito)
 #define GPIO_PWM_B       (PC8) // pino PWM do motor B (direito)
 
-#define GPIO_PWM_VACUUM (11)   // Pino PWM do motor de sucção
+// --- Motor de sucção -------------------------------
+#define GPIO_PWM_VACUUM (PC12)
 
 /* Canais do periférico LEDC do ESP32 usados por cada motor.
 Não são pinos físicos, só um número de canal interno.
@@ -38,8 +39,6 @@ Não são pinos físicos, só um número de canal interno.
 #define PWM_RESOLUTION_BITS (8)
 #define MAX_PWM_VALUE       (255)
 
-// --- Motor de sucção -------------------------------
-#define GPIO_PWM_VACUUM (PC12)
 
 // --- Calibração Automática----------------------------------
 // Ao ligar, o robô espera os micro segundos definidos e depois calibra sozinho.
@@ -55,8 +54,10 @@ Não são pinos físicos, só um número de canal interno.
 
 // --- Bluetooth (módulo externo por UART) -------------------------------------
 
-#define BT_UART_RX_PIN PA10
-#define BT_UART_TX_PIN PA9
+#define BT_UART_RX_PIN (PA10)
+#define BT_UART_TX_PIN (PA9)
+
+#define BLE_BUS huart1
 
 #define BT_BAUD (230400)
 

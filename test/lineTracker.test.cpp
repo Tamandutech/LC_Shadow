@@ -127,8 +127,8 @@ void test_LineTrackerDetectsLineAndReturnsCorrection(void) {
 
   // Pista preta / linha branca: leitura BAIXA = está em cima da linha.
   // Linha embaixo do sensor mais à esquerda -> erro negativo esperado.
-  int rawReadings[NUM_LINE_SENSORS] = {0,    1000, 1000, 1000, 1000, 1000,
-                                       1000, 1000, 1000, 1000, 1000, 1000};
+  long int rawReadings[NUM_LINE_SENSORS] = {0,    1000, 1000, 1000, 1000, 1000,
+                                            1000, 1000, 1000, 1000, 1000, 1000};
 
   float correction = tracker.update(rawReadings);
 
@@ -148,8 +148,8 @@ void test_LineTrackerReportsNoLineWhenAllSensorsSeeTrack(void) {
                       /*invertReadings=*/true);
 
   // Todos os sensores veem só a pista preta (leitura crua alta = fundo).
-  int rawReadings[NUM_LINE_SENSORS] = {1000, 1000, 1000, 1000, 1000, 1000,
-                                       1000, 1000, 1000, 1000, 1000, 1000};
+  long int rawReadings[NUM_LINE_SENSORS] = {1000, 1000, 1000, 1000, 1000, 1000,
+                                            1000, 1000, 1000, 1000, 1000, 1000};
 
   tracker.update(rawReadings);
 

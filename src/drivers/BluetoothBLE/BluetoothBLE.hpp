@@ -7,10 +7,16 @@
 // BluetoothBLE
 // -----------------------------------------------------------------------------
 
-#define NuSerial Serial1
+class BLE {
+public:
+  static const char &lastCharacter;
 
-// Inicializa a UART do Bluetooth com o baud rate informado (ex: BT_BAUD).
-// Chamar no setup().
-void bluetoothBegin(unsigned long baud);
+  // AJUSTADO: Agora aceita o baudrate enviado pelo main.cpp
+  static void initialize(uint32_t baudrate);
+  static void start();
+  static void restart();
+  static void setup();
+  static void resetLastCharacter();
+};
 
 #endif

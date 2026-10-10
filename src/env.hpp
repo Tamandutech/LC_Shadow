@@ -57,8 +57,10 @@ Não são pinos físicos, só um número de canal interno.
 #define BT_UART_RX_PIN (PA10)
 #define BT_UART_TX_PIN (PA9)
 
-#define BLE_BUS huart1
+#define NuSerial Serial1
 
-#define BT_BAUD (230400)
+#define BLE_PIN "123456"
+
+#define BT_BAUD (9600)
 
 #endif

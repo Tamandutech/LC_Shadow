@@ -12,8 +12,8 @@
 // Lógica
 #include "logic/LineTracker/LineTracker.hpp"
 
-#include <string>
 #include <array>
+#include <string>
 using namespace std;
 
 LineSensorArray lineSensors;
@@ -169,9 +169,11 @@ void applyMotorSpeeds(float correction) {
 }
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(115200); // Serial de debug do PC (via USB)
 
-  bluetoothBegin(BT_BAUD);
+  // CORREÇÃO: Substitua bluetoothBegin(BT_BAUD); por:
+  BLE::initialize(BT_BAUD);
+  BLE::setup(); // Chama a configuração dos comandos AT do Bluetooth
 
   analogReadResolution(12);
 
